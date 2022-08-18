@@ -1,3 +1,6 @@
+# UPDATE (Mac)
+The code can now work on M1 Macs using MPS device.
+
 # UPDATE
 
 The code can now generate images in batches which reduce the inference time for a single 512x512 image on a RTX 2060 from 75 to 40 seconds!
