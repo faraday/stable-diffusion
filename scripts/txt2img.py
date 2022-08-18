@@ -37,7 +37,7 @@ def load_model_from_config(config, ckpt, verbose=False):
         print("unexpected keys:")
         print(u)
 
-    model.cuda()
+    # model.cuda()
     model.eval()
     return model
 
@@ -187,8 +187,9 @@ def main():
     config = OmegaConf.load(f"{opt.config}")
     model = load_model_from_config(config, f"{opt.ckpt}")
 
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    model = model.to(device)
+    # device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    device = torch.device('mps')
+    # model = model.to(device)
 
     if opt.plms:
         sampler = PLMSSampler(model)
@@ -230,10 +231,13 @@ def main():
                     for prompts in tqdm(data, desc="data"):
                         uc = None
                         if opt.scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
+                            model.cpu()
+                            uc = model.get_learned_conditioning(batch_size * [""]).to(device)
                         if isinstance(prompts, tuple):
                             prompts = list(prompts)
-                        c = model.get_learned_conditioning(prompts)
+                        model.cpu()
+                        c = model.get_learned_conditioning(prompts).to(device)
+                        model = model.to(device)
                         shape = [opt.C, opt.H // opt.f, opt.W // opt.f]
                         samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
                                                          conditioning=c,

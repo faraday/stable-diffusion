@@ -16,9 +16,11 @@ class PLMSSampler(object):
         self.schedule = schedule
 
     def register_buffer(self, name, attr):
+        # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        device = 'mps'
         if type(attr) == torch.Tensor:
-            if attr.device != torch.device("cuda"):
-                attr = attr.to(torch.device("cuda"))
+            if attr.device != torch.device(device):
+                attr = attr.float().to(torch.device(device))
         setattr(self, name, attr)
 
     def make_schedule(self, ddim_num_steps, ddim_discretize="uniform", ddim_eta=0., verbose=True):
