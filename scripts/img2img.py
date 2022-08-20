@@ -40,7 +40,7 @@ def load_model_from_config(config, ckpt, verbose=False):
         print("unexpected keys:")
         print(u)
 
-    model.cuda()
+    #model.cuda()
     model.eval()
     return model
 
@@ -199,8 +199,9 @@ def main():
     config = OmegaConf.load(f"{opt.config}")
     model = load_model_from_config(config, f"{opt.ckpt}")
 
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    model = model.to(device)
+    #device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    device = torch.device("mps")
+    # model = model.to(device)
 
     if opt.plms:
         raise NotImplementedError("PLMS sampler not (yet) supported")
@@ -230,9 +231,9 @@ def main():
     grid_count = len(os.listdir(outpath)) - 1
 
     assert os.path.isfile(opt.init_img)
-    init_image = load_img(opt.init_img).to(device)
+    init_image = load_img(opt.init_img).to('cpu')
     init_image = repeat(init_image, '1 ... -> b ...', b=batch_size)
-    init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image))  # move to latent space
+    init_latent = model.get_first_stage_encoding(model.encode_first_stage(init_image)).to('mps')  # move to latent space
 
     sampler.make_schedule(ddim_num_steps=opt.ddim_steps, ddim_eta=opt.ddim_eta, verbose=False)
 
@@ -250,10 +251,13 @@ def main():
                     for prompts in tqdm(data, desc="data"):
                         uc = None
                         if opt.scale != 1.0:
-                            uc = model.get_learned_conditioning(batch_size * [""])
+                            model.cpu()
+                            uc = model.get_learned_conditioning(batch_size * [""]).to(device)
                         if isinstance(prompts, tuple):
                             prompts = list(prompts)
-                        c = model.get_learned_conditioning(prompts)
+                        model.cpu()
+                        c = model.get_learned_conditioning(prompts).to(device)
+                        model = model.to(device)
 
                         # encode (scaled latent)
                         z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(device))
