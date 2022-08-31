@@ -20,7 +20,7 @@ class PLMSSampler(object):
         device = 'mps'
         if type(attr) == torch.Tensor:
             if attr.device != torch.device(device):
-                attr = attr.float().to(torch.device(device))
+                attr = attr.type(torch.float32).to(torch.device(device)).contiguous()
         setattr(self, name, attr)
 
     def make_schedule(self, ddim_num_steps, ddim_discretize="uniform", ddim_eta=0., verbose=True):
